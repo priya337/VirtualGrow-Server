@@ -1,3 +1,8 @@
+
+const UserModel = require("./models/User.model.js");
+const PlantModel = require("./models/Plant.model.js");
+
+
 // ℹ️ Gets access to environment variables/settings
 // https://www.npmjs.com/package/dotenv
 require("dotenv").config();
@@ -17,6 +22,10 @@ require("./config")(app);
 // 👇 Start handling routes here
 const indexRoutes = require("./routes/index.routes");
 app.use("/api", indexRoutes);
+const userRoutes = require("./routes/user.routes");
+app.use("/user", userRoutes);
+const plantRoutes = require("./routes/plant.routes");
+app.use("/plant", plantRoutes);
 
 // ❗ To handle errors. Routes that don't exist or errors that you handle in specific routes
 require("./error-handling")(app);
