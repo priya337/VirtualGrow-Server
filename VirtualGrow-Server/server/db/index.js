@@ -1,19 +1,19 @@
-// ℹ️ package responsible to make the connection with mongodb
-// https://www.npmjs.com/package/mongoose
 const mongoose = require("mongoose");
 
-// ℹ️ Sets the MongoDB URI for our app to have access to it.
-// If no env has been set, we dynamically set it to whatever the folder name was upon the creation of the app
-
-const MONGO_URI =
-  process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/VirtualGrow-Server";
+// ℹ️ Direct MongoDB Atlas URI
+const MONGO_URI = "mongodb+srv://ironhack:aohLhWNlRMnBWMua@cluster0.mwc75.mongodb.net/VirtualGrow-Server?retryWrites=true&w=majority";
 
 mongoose
-  .connect(MONGO_URI)
+  .connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then((x) => {
-    const dbName = x.connections[0].name;
-    console.log(`Connected to Mongo! Database name: "${dbName}"`);
+    console.log(`✅ Connected to MongoDB: ${x.connections[0].name}`);
   })
   .catch((err) => {
-    console.error("Error connecting to mongo: ", err);
+    console.error("❌ Error connecting to MongoDB:", err);
+    process.exit(1);
   });
+
+module.exports = mongoose;
