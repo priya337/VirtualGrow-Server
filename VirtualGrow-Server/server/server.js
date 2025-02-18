@@ -6,35 +6,32 @@ import aiRoutes from "./routes/ai.routes.js";
 import userRoutes from "./routes/user.routes.js"; // ✅ Import user routes
 import cookieParser from "cookie-parser";
 
-
-
-dotenv.config(); // Load environment variables
+dotenv.config(); // ✅ Load environment variables
 
 const app = express();
 
 // ✅ Middleware
 app.use(express.json());
+app.use(cookieParser());
 
-// ✅ Debugging Log
 console.log("🔍 Initializing Server...");
 
-// ✅ CORS Configuration (Allow Frontend Deployment URL & Local Dev)
+// ✅ CORS Configuration
 const allowedOrigins = [
-  process.env.FRONTEND_URL,  // ✅ Frontend deployment URL from .env
-  "http://localhost:5176"    // ✅ Local frontend for development
-].filter(Boolean);  // Remove undefined values
+  process.env.FRONTEND_URL,  // ✅ Allow frontend deployment URL from .env
+  "http://localhost:5173",   // ✅ Vite Default Dev Server
+  "http://localhost:3000",   // ✅ React Dev Server (if applicable)
+].filter(Boolean);  // ✅ Remove undefined values
 
 app.use(
   cors({
-    origin: allowedOrigins.length > 0 ? allowedOrigins : "*", // ✅ Temporary Debugging: Allow all origins if undefined
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
+    origin: allowedOrigins.length > 0 ? allowedOrigins : "*", // ✅ Fallback to "*" only for debugging
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // ✅ Ensure all HTTP methods are allowed
+    credentials: true, // ✅ Allow cookies/sessions
   })
 );
 
 console.log("✅ CORS Configured with Allowed Origins:", allowedOrigins);
-
-app.use(cookieParser());
 
 // ✅ MongoDB Connection
 const mongoURI = process.env.MONGODB_URI;
@@ -54,10 +51,8 @@ mongoose
     process.exit(1);
   });
 
-// ✅ Debugging Log for Route Registration
+// ✅ Register Routes
 console.log("🔍 Registering Routes...");
-
-// ✅ API Routes
 app.use("/api/ai", aiRoutes);
 console.log("✅ AI Routes Registered at /api/ai");
 
@@ -75,13 +70,8 @@ app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });
 });
 
-// ✅ Start Server - Use Only `process.env.PORT` for Render Deployment
+// ✅ Start Server
 const PORT = process.env.PORT || 5007;
-if (!PORT) {
-  console.error("❌ PORT is missing in environment variables.");
-  process.exit(1);
-}
-
 const server = app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
