@@ -13,7 +13,7 @@ const cookieParser = require("cookie-parser");
 // unless the request if from the same domain, by default express wont accept POST requests
 const cors = require("cors");
 
-const FRONTEND_URL = process.env.ORIGIN || "http://localhost:3000";
+const FRONTEND_URL = "https://virtual-grow.netlify.app" ;
 
 // Middleware configuration
 module.exports = (app) => {
@@ -21,13 +21,8 @@ module.exports = (app) => {
   // Services like heroku use something called a proxy and you need to add this to your server
   app.set("trust proxy", 1);
 
-  // controls a very specific header to pass headers from the frontend
-  app.use(
-    cors({
-      credentials: true,
-      origin: [FRONTEND_URL]
-    })
-  );
+
+  app.use(cors()); // 🌍 Enable CORS
 
   // In development environment the app logs
   app.use(logger("dev"));
