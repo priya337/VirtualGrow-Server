@@ -1,22 +1,28 @@
 const jwt = require("jsonwebtoken");
 
 const isAuthenticated = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  try {
+    const authHeader = req.headers.authorization;
 
-  if (!authHeader) {
-    return res.status(401).json({ message: "Unauthorized: No token provided" });
-  }
-
-  const token = authHeader.split(" ")[1]; // Extract token from "Bearer <token>"
-
-  jwt.verify(token, process.env.TOKEN_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(403).json({ message: "Unauthorized: Invalid token" });
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Unauthorized: No token provided or invalid format" });
     }
 
-    req.user = decoded; // Attach decoded user data to request
-    next();
-  });
+    const token = authHeader.split(" ")[1]; // Extract token
+
+    jwt.verify(token, process.env.TOKEN_SECRET, (err, decoded) => {
+      if (err) {
+        console.error("🔒 Token verification failed:", err.message);
+        return res.status(403).json({ error: "Unauthorized: Invalid or expired token" });
+      }
+
+      req.user = decoded; // Attach decoded user data to request
+      next();
+    });
+  } catch (error) {
+    console.error("🚨 Error in authentication middleware:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
 module.exports = isAuthenticated;

@@ -37,7 +37,8 @@ const UserSchema = new mongoose.Schema(
       default: false
     },
     resetPasswordToken: { type: String }, // ✅ Store reset token
-    resetPasswordExpires: { type: Date } // ✅ Expiry time for reset token
+    resetPasswordExpires: { type: Date }, // ✅ Expiry time for reset token
+    refreshToken: { type: String, default: null } // ✅ Added refreshToken field
   },
   { timestamps: true }
 );
