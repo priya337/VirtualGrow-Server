@@ -70,11 +70,19 @@ router.post("/login", async (req, res) => {
       return res.status(403).json({ error: "Invalid credentials" });
     }
 
-    const tokenData = { _id: foundUser._id, email: foundUser.email, name: foundUser.name };
+    const tokenData = {
+      _id: foundUser._id,
+      email: foundUser.email,
+      name: foundUser.name
+    };
 
     // Generate tokens
-    const accessToken = jwt.sign(tokenData, process.env.TOKEN_SECRET, { expiresIn: "30m" });
-    const refreshToken = jwt.sign(tokenData, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+    const accessToken = jwt.sign(tokenData, process.env.TOKEN_SECRET, {
+      expiresIn: "30m"
+    });
+    const refreshToken = jwt.sign(tokenData, process.env.REFRESH_TOKEN_SECRET, {
+      expiresIn: "7d"
+    });
 
     // ✅ Store refresh token in MongoDB
     foundUser.refreshToken = refreshToken;
@@ -82,18 +90,35 @@ router.post("/login", async (req, res) => {
 
     // ✅ Store refresh token in a secure HTTP-only cookie
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true, // ✅ Prevents JavaScript access
-      secure: process.env.NODE_ENV === "production", // ✅ Set true if using HTTPS
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // true if HTTPS
       sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days expiration
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
-    // ✅ Send access token & refresh token in JSON response
-    res.status(200).json({ message: "Login successful", accessToken, refreshToken });
+    // ---------------------------------------------------------------
+    // ADD THIS LINE: store the ACCESS token in an HTTP-only cookie too
+    // ---------------------------------------------------------------
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 30 * 60 * 1000, // 30 minutes in ms
+    });
+
+    // ✅ Send access token & refresh token in JSON response (unchanged)
+    res.status(200).json({
+      message: "Login successful",
+      accessToken,
+      refreshToken
+    });
   } catch (error) {
-    res.status(500).json({ error: "Error logging in user", message: error.message });
+    res
+      .status(500)
+      .json({ error: "Error logging in user", message: error.message });
   }
 });
+
 
 
 // 🔄 Refresh Access Token Automatically (No User Input Required)
