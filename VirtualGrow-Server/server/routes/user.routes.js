@@ -14,48 +14,66 @@ const router = express.Router();
 
 
 
+
 // 🔐 Signup - Register User (With Image Validation)
 router.post("/signup", async (req, res) => {
   try {
-    const { email, password, name, age, location, photo, ExteriorPlants, InteriorPlants } = req.body;
+    const {
+      email,
+      password,
+      name,
+      age,
+      location,
+      photo, // Now the front end always sends this
+      ExteriorPlants,
+      InteriorPlants,
+    } = req.body;
 
     // Check for required fields
+    // If you want photo to be mandatory, keep it here
+    // If you want it optional, remove `|| !photo`
     if (!email || !password || !name || !age || !photo) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Validate photo file extension
-    const allowedExtensions = [".jpg", ".jpeg", ".png", ".gif"];
-    const fileExtension = photo.split(".").pop().toLowerCase();
-
-    if (!allowedExtensions.includes(`.${fileExtension}`)) {
-      return res.status(400).json({ error: "Invalid photo format. Allowed formats: .jpg, .jpeg, .png, .gif" });
+    // Check if user already exists
+    const existingUser = await UserModel.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ error: "Email is already registered" });
     }
 
-    // Check if the user already exists
-    const existingUser = await UserModel.findOne({ email });
-    if (existingUser) return res.status(400).json({ error: "Email is already registered" });
-
-    // Hash the password securely before saving
+    // Hash the password
     const hashedPassword = await bcryptjs.hash(password, 12);
 
-    // Create the new user
+    // ✅ Validate photo file extension (optional)
+    // If your front end always sends a Pollinations URL, you may not need this check
+    const allowedExtensions = [".jpg", ".jpeg", ".png", ".gif"];
+    const fileExtension = photo.split(".").pop().toLowerCase();
+    if (!allowedExtensions.includes(`.${fileExtension}`)) {
+      return res
+        .status(400)
+        .json({ error: "Invalid photo format. Allowed: .jpg, .jpeg, .png, .gif" });
+    }
+
+    // Create new user
     const newUser = await UserModel.create({
       email,
       password: hashedPassword,
       name,
       age,
       location,
-      photo,
+      photo, // Just store whatever URL was sent from the front end
       ExteriorPlants: ExteriorPlants || false,
       InteriorPlants: InteriorPlants || false,
     });
 
     res.status(201).json({ message: "User created successfully" });
   } catch (error) {
+    console.error("Error creating user:", error);
     res.status(500).json({ error: "Error creating user", message: error.message });
   }
 });
+
 
 
 // 🔑 Login - Authenticate & Issue Tokens
