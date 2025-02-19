@@ -139,6 +139,19 @@ router.post("/refresh-token", async (req, res) => {
   }
 });
 
+// 🆕 Get User Profile by Email
+router.get("/profile/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const user = await UserModel.findOne({ email }).select("-password -refreshToken"); // Exclude sensitive data
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching user profile", message: error.message });
+  }
+});
 
 
 
