@@ -3,6 +3,8 @@ import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import UserModel from "../models/User.model.js";
 import dotenv from "dotenv";
+import isAuthenticated from '../middleware/auth.middleware.js';
+import { deleteUserProfile } from '../controllers/userController.js';
 import cookieParser from "cookie-parser";
 
 
@@ -142,6 +144,8 @@ router.post("/refresh-token", async (req, res) => {
     res.status(500).json({ error: "Error refreshing token", message: error.message });
   }
 });
+
+router.delete('/delete', isAuthenticated, deleteUserProfile);
 
 // 🆕 Get User Profile by Email
 router.get("/profile/:email", async (req, res) => {
