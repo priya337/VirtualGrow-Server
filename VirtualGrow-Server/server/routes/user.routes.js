@@ -5,8 +5,11 @@ import UserModel from "../models/User.model.js";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 
+
 dotenv.config();
 const router = express.Router();
+
+
 
 
 // 🔐 Signup - Register User (With Image Validation)
@@ -53,7 +56,6 @@ router.post("/signup", async (req, res) => {
 });
 
 
-// 🔑 Login - Authenticate & Issue Tokens
 // 🔑 Login - Authenticate & Issue Tokens
 router.post("/login", async (req, res) => {
   try {
@@ -157,28 +159,25 @@ router.get("/profile/:email", async (req, res) => {
 
 router.post("/reset-password", async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
+    const { email, newPassword } = req.body;
 
-    // Verify token
-    const decoded = jwt.verify(token, process.env.RESET_TOKEN_SECRET);
-
-    // Find user by ID
-    const user = await UserModel.findById(decoded._id);
+    // Find user by email
+    const user = await UserModel.findOne({ email });
     if (!user) return res.status(404).json({ error: "User not found" });
 
     // Hash the new password
     const hashedPassword = await bcryptjs.hash(newPassword, 12);
 
-    // Update password and clear reset token
+    // Update password
     user.password = hashedPassword;
-    user.resetToken = null;
     await user.save();
 
     res.status(200).json({ message: "Password updated successfully!" });
   } catch (error) {
-    res.status(400).json({ error: "Invalid or expired token", message: error.message });
+    res.status(400).json({ error: "Something went wrong", message: error.message });
   }
 });
+
 
 
 // 🔓 Logout - Securely Remove Refresh Token
