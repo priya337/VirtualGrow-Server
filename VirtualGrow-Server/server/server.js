@@ -34,8 +34,7 @@ app.use(
 
 console.log("✅ CORS Configured for:", allowedOrigins);
 
-app.use(express.json());
-app.use(cookieParser());
+
 
 // ✅ Middleware
 app.use(express.json());
