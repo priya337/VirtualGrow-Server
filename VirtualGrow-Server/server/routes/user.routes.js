@@ -22,7 +22,6 @@ router.post("/signup", async (req, res) => {
       email,
       password,
       name,
-      age,
       location,
       photo, // Now the front end always sends this
       ExteriorPlants,
@@ -60,7 +59,6 @@ router.post("/signup", async (req, res) => {
       email,
       password: hashedPassword,
       name,
-      age,
       location,
       photo, // Just store whatever URL was sent from the front end
       ExteriorPlants: ExteriorPlants || false,
