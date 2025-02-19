@@ -10,28 +10,38 @@ dotenv.config(); // ✅ Load environment variables
 
 const app = express();
 
+// ✅ CORS Configuration - Allow Requests from Netlify
+const allowedOrigins = [
+  "https://virtual-grow.netlify.app",  // ✅ Netlify frontend
+  "http://localhost:5176",             // ✅ Local dev (Vite default port)
+  "http://localhost:3000"              // ✅ Local React dev
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log("❌ Blocked by CORS:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true, // ✅ Allow cookies/sessions
+  })
+);
+
+console.log("✅ CORS Configured for:", allowedOrigins);
+
+app.use(express.json());
+app.use(cookieParser());
+
 // ✅ Middleware
 app.use(express.json());
 app.use(cookieParser());
 
 console.log("🔍 Initializing Server...");
-
-// ✅ CORS Configuration
-const allowedOrigins = [
-  process.env.FRONTEND_URL,  // ✅ Allow frontend deployment URL from .env
-  "http://localhost:5173",   // ✅ Vite Default Dev Server
-  "http://localhost:3000",   // ✅ React Dev Server (if applicable)
-].filter(Boolean);  // ✅ Remove undefined values
-
-app.use(
-  cors({
-    origin: allowedOrigins.length > 0 ? allowedOrigins : "*", // ✅ Fallback to "*" only for debugging
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // ✅ Ensure all HTTP methods are allowed
-    credentials: true, // ✅ Allow cookies/sessions
-  })
-);
-
-console.log("✅ CORS Configured with Allowed Origins:", allowedOrigins);
 
 // ✅ MongoDB Connection
 const mongoURI = process.env.MONGODB_URI;
