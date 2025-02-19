@@ -194,32 +194,44 @@ router.post("/reset-password", async (req, res) => {
 });
 
 
-
-// 🔓 Logout - Securely Remove Refresh Token
+// 🔓 Logout - Securely Remove Tokens
 router.post("/logout", async (req, res) => {
   try {
-    const refreshToken = req.cookies.refreshToken;
+    const { refreshToken } = req.cookies;
 
-    if (!refreshToken) return res.status(400).json({ error: "No refresh token provided" });
+    if (!refreshToken) {
+      return res.status(400).json({ error: "No refresh token provided" });
+    }
 
-    // Find user and remove refresh token
+    // Find user by refresh token and remove it
     const user = await UserModel.findOne({ refreshToken });
     if (user) {
       user.refreshToken = null;
       await user.save();
     }
 
-    // Clear the HTTP-only cookie
+    // Clear the refreshToken cookie
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production", // or 'true' if always HTTPS
       sameSite: "Strict",
     });
 
-    res.status(200).json({ message: "Logged out successfully" });
+    // Also clear the accessToken cookie if you're using it
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+    });
+
+    return res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
-    res.status(500).json({ error: "Error logging out", message: error.message });
+    return res
+      .status(500)
+      .json({ error: "Error logging out", message: error.message });
   }
 });
+
+
 
 export default router;
