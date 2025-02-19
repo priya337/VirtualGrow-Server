@@ -54,6 +54,7 @@ router.post("/signup", async (req, res) => {
 
 
 // 🔑 Login - Authenticate & Issue Tokens
+// 🔑 Login - Authenticate & Issue Tokens
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -75,15 +76,16 @@ router.post("/login", async (req, res) => {
     foundUser.refreshToken = refreshToken;
     await foundUser.save();
 
-    // ✅ Store refresh token in an HTTP-only cookie
+    // ✅ Store refresh token in a secure HTTP-only cookie
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: false, // Set to `true` only if using HTTPS
+      httpOnly: true, // ✅ Prevents JavaScript access
+      secure: process.env.NODE_ENV === "production", // ✅ Set true if using HTTPS
       sameSite: "Strict",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days expiration
     });
 
-    res.status(200).json({ message: "Login successful", accessToken });
+    // ✅ Send access token & refresh token in JSON response
+    res.status(200).json({ message: "Login successful", accessToken, refreshToken });
   } catch (error) {
     res.status(500).json({ error: "Error logging in user", message: error.message });
   }
