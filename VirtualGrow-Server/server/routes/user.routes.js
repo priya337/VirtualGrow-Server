@@ -31,7 +31,7 @@ router.post("/signup", async (req, res) => {
     // Check for required fields
     // If you want photo to be mandatory, keep it here
     // If you want it optional, remove `|| !photo`
-    if (!email || !password || !name || !age || !photo) {
+    if (!email || !password || !name || !photo) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
