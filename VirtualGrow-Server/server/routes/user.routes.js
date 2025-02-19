@@ -99,7 +99,7 @@ router.post("/login", async (req, res) => {
     // ---------------------------------------------------------------
     // ADD THIS LINE: store the ACCESS token in an HTTP-only cookie too
     // ---------------------------------------------------------------
-    res.cookie("token", token, {
+    res.cookie("token", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
