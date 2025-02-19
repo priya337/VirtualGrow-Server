@@ -26,7 +26,7 @@ const UserSchema = new mongoose.Schema(
     }, 
     photo: { 
       type: String,
-      required: [true, "Photo is required."]
+      required: [false, "Photo is required."]
     },
     ExteriorPlants: { 
       type: Boolean,
