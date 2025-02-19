@@ -19,7 +19,7 @@ const UserSchema = new mongoose.Schema(
     },  
     age: { 
       type: Number,
-      required: [true, "Age is required."]
+      required: [false, "Age is required."]
     },
     location: { 
       type: String
