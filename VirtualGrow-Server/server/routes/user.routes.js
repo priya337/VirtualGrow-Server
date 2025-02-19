@@ -96,16 +96,6 @@ router.post("/login", async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
-    // ---------------------------------------------------------------
-    // ADD THIS LINE: store the ACCESS token in an HTTP-only cookie too
-    // ---------------------------------------------------------------
-    res.cookie("token", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 30 * 60 * 1000, // 30 minutes in ms
-    });
-
     // ✅ Send access token & refresh token in JSON response (unchanged)
     res.status(200).json({
       message: "Login successful",
@@ -170,19 +160,15 @@ router.post("/refresh-token", async (req, res) => {
   }
 });
 
-router.delete('/delete', isAuthenticated, deleteUserProfile);
-
-// 🆕 Get User Profile by Email
-router.get("/profile/:email", async (req, res) => {
+router.delete('/delete', async (req, res) => {
   try {
-    const { email } = req.params;
-
-    const user = await UserModel.findOne({ email }).select("-password -refreshToken"); // Exclude sensitive data
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    res.status(200).json(user);
+    // For example, just remove the user by their email or ID
+    const { email } = req.body; // or some unique identifier
+    await UserModel.deleteOne({ email });
+    return res.status(200).json({ message: 'User deleted successfully' });
   } catch (error) {
-    res.status(500).json({ error: "Error fetching user profile", message: error.message });
+    console.error(error);
+    return res.status(500).json({ error: 'Server error' });
   }
 });
 
