@@ -2,13 +2,12 @@ const jwt = require("jsonwebtoken");
 
 const isAuthenticated = (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    // Attempt to get token from cookies
+    const token = req.cookies.token;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Unauthorized: No token provided or invalid format" });
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized: No token provided" });
     }
-
-    const token = authHeader.split(" ")[1]; // Extract token
 
     jwt.verify(token, process.env.TOKEN_SECRET, (err, decoded) => {
       if (err) {
