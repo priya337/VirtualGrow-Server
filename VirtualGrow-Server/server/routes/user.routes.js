@@ -37,7 +37,7 @@ router.post("/signup", async (req, res) => {
     }
 
     // Hash the password
-    const hashedPassword = await bcryptjs.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     // ✅ Validate photo file extension (optional)
     // If your front end always sends a Pollinations URL, you may not need this check
@@ -194,7 +194,7 @@ router.post("/reset-password", async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     // Hash the new password
-    const hashedPassword = await bcryptjs.hash(newPassword, 12);
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
 
     // Update password
     user.password = hashedPassword;
