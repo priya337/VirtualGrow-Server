@@ -77,16 +77,27 @@ router.post("/signup", async (req, res) => {
 // 🔑 Login - Authenticate & Issue Tokens
 router.post("/login", async (req, res) => {
   try {
+    console.log("Login route hit. Request body:", req.body);
+
     const { email, password } = req.body;
 
-    // 1. Validate user & password (pseudo-code)
+    // 1. Validate user by email
     const user = await UserModel.findOne({ email });
-    if (!user) return res.status(404).json({ error: "User not found" });
+    console.log("User found in DB:", user);
 
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // 2. Compare password with hashed password in DB
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(403).json({ error: "Invalid credentials" });
+    console.log("Password match status:", isMatch);
 
-    // 2. Generate tokens
+    if (!isMatch) {
+      return res.status(403).json({ error: "Invalid credentials" });
+    }
+
+    // 3. Generate tokens
     const tokenData = { _id: user._id, email: user.email };
     const accessToken = jwt.sign(tokenData, process.env.TOKEN_SECRET, {
       expiresIn: "30m",
@@ -95,12 +106,11 @@ router.post("/login", async (req, res) => {
       expiresIn: "7d",
     });
 
-    // 3. Save refresh token in DB (if you want to invalidate it later)
+    // 4. Save refresh token in DB (if you want to invalidate later)
     user.refreshToken = refreshToken;
     await user.save();
 
-    // 4. Set the cookies
-    // Access token cookie
+    // 5. Set HTTP-only cookies for both tokens
     res.cookie("token", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -108,7 +118,6 @@ router.post("/login", async (req, res) => {
       maxAge: 30 * 60 * 1000, // 30 minutes
     });
 
-    // Refresh token cookie
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -116,16 +125,18 @@ router.post("/login", async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    // 5. Optionally return user info in JSON
+    // 6. Optionally return user info
+    console.log("Login successful. Sending response...");
     return res.status(200).json({
       message: "Login successful",
       user: { email: user.email, name: user.name },
     });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ error: "Server error during login" });
+    return res.status(500).json({ error: "Server error during login" });
   }
 });
+
 
 
 
