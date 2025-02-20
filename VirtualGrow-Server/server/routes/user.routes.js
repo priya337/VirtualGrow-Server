@@ -135,9 +135,6 @@ router.post("/login", async (req, res) => {
 });
 
 
-
-
-
 // 🔄 Refresh Access Token Automatically (No User Input Required)
 router.post("/logout", async (req, res) => {
   try {
@@ -172,9 +169,7 @@ router.post("/logout", async (req, res) => {
     res.status(500).json({ error: "Error logging out", message: error.message });
   }
 });
-
-
-
+ 
 router.delete('/delete', async (req, res) => {
   try {
     // For example, just remove the user by their email or ID
@@ -209,19 +204,30 @@ router.post("/reset-password", async (req, res) => {
 });
 
 
-router.get("/profile/:email", isAuthenticated, async (req, res) => {
+// In your user routes file
+// In your users router file
+router.get("/profile", isAuthenticated, async (req, res) => {
   try {
-    const { email } = req.params;
-    const user = await UserModel.findOne({ email });
+    // If using JWT or session-based authentication, you can retrieve
+    // the user ID from req.user (or req.session) as set by your middleware.
+    const userId = req.user?._id; // or however your isAuthenticated middleware sets req.user
+    if (!userId) {
+      return res.status(401).json({ error: "Not authorized" });
+    }
+
+    const user = await UserModel.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    res.json(user);
+
+    // Return the user object
+    res.status(200).json(user);
   } catch (err) {
-    console.error(err);
+    console.error("Server error fetching profile:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
+
 
 
 // 🔓 Logout - Securely Remove Tokens
