@@ -225,28 +225,34 @@ router.get("/garden/:name", async (req, res) => {
 
 
 // POST /api/ai/saveImage
-router.post('/saveImage', async (req, res) => {
+router.post("/saveImage", async (req, res) => {
   const { gardenName, imageUrl } = req.body;
 
   if (!gardenName || !imageUrl) {
-    return res.status(400).json({ error: 'Missing required fields: gardenName or imageUrl' });
+    return res.status(400).json({ error: "Missing required fields: gardenName or imageUrl" });
   }
 
   try {
-    // Instead of "new Image(...) and .save()", do a findOneAndUpdate:
-    const updatedImage = await Image.findOneAndUpdate(
-      { gardenName },
-      { imageUrl }, // update the imageUrl field
-      { new: true, upsert: true } // upsert: true creates if not found
+    // Update the garden’s imageUrl field
+    const updatedGarden = await Garden.findOneAndUpdate(
+      { name: gardenName },
+      { imageUrl }, // overwrite the existing imageUrl
+      { new: true } // return the updated document
     );
 
-    res.status(200).json({ message: 'Image updated successfully', data: updatedImage });
+    if (!updatedGarden) {
+      return res.status(404).json({ error: "Garden not found" });
+    }
+
+    res.status(200).json({
+      message: "Garden image updated successfully",
+      data: updatedGarden,
+    });
   } catch (error) {
-    console.error('Error updating image:', error);
-    res.status(500).json({ error: 'Server error updating image' });
+    console.error("Error updating garden image:", error);
+    res.status(500).json({ error: "Server error updating garden image" });
   }
 });
-
 
 
 router.get('/images/:name', async (req, res) => {
