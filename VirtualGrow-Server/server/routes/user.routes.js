@@ -46,13 +46,13 @@ router.post("/signup", async (req, res) => {
 
     // ✅ Validate photo file extension (optional)
     // If your front end always sends a Pollinations URL, you may not need this check
-    const allowedExtensions = [".jpg", ".jpeg", ".png", ".gif"];
-    const fileExtension = photo.split(".").pop().toLowerCase();
-    if (!allowedExtensions.includes(`.${fileExtension}`)) {
-      return res
-        .status(400)
-        .json({ error: "Invalid photo format. Allowed: .jpg, .jpeg, .png, .gif" });
-    }
+    // const allowedExtensions = [".jpg", ".jpeg", ".png", ".gif"];
+    // const fileExtension = photo.split(".").pop().toLowerCase();
+    // if (!allowedExtensions.includes(`.${fileExtension}`)) {
+    //   return res
+    //     .status(400)
+    //     .json({ error: "Invalid photo format. Allowed: .jpg, .jpeg, .png, .gif" });
+    // }
 
     // Create new user
     const newUser = await UserModel.create({
@@ -168,6 +168,21 @@ router.post("/reset-password", async (req, res) => {
     res.status(200).json({ message: "Password updated successfully!" });
   } catch (error) {
     res.status(400).json({ error: "Something went wrong", message: error.message });
+  }
+});
+
+
+router.get("/profile/:email", isAuthenticated, async (req, res) => {
+  try {
+    const { email } = req.params;
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
