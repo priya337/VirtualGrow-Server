@@ -223,25 +223,17 @@ router.get("/garden/:name", async (req, res) => {
   }
 });
 
-router.post('/saveImage', async (req, res) => {
-  const { gardenName, imageUrl } = req.body;
-
-  // Validate required fields
-  if (!gardenName || !imageUrl) {
-    return res.status(400).json({ error: 'Missing required fields: gardenName or imageUrl' });
-  }
-
+router.get('/images/:gardenName', async (req, res) => {
+  const { gardenName } = req.params;
   try {
-    // Create and save the new image document
-    const newImage = new Image({ gardenName, imageUrl });
-    await newImage.save();
-
-    res.status(201).json({ message: 'Image saved successfully', data: newImage });
+    const images = await Image.find({ gardenName });
+    res.status(200).json(images);
   } catch (error) {
-    console.error('Error saving image:', error);
-    res.status(500).json({ error: 'Server error saving image' });
+    console.error('Error fetching images:', error);
+    res.status(500).json({ error: 'Server error fetching images' });
   }
 });
+
 
 router.get("/gardens", async (req, res) => {
   try {
