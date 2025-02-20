@@ -228,23 +228,25 @@ router.get("/garden/:name", async (req, res) => {
 router.post('/saveImage', async (req, res) => {
   const { gardenName, imageUrl } = req.body;
 
-  // Validate required fields
   if (!gardenName || !imageUrl) {
     return res.status(400).json({ error: 'Missing required fields: gardenName or imageUrl' });
   }
 
   try {
-    // Example: You might have an Image model or a Garden model
-    // If you have a separate Image model:
-    const newImage = new Image({ gardenName, imageUrl });
-    await newImage.save();
+    // Instead of "new Image(...) and .save()", do a findOneAndUpdate:
+    const updatedImage = await Image.findOneAndUpdate(
+      { gardenName },
+      { imageUrl }, // update the imageUrl field
+      { new: true, upsert: true } // upsert: true creates if not found
+    );
 
-    res.status(201).json({ message: 'Image saved successfully', data: newImage });
+    res.status(200).json({ message: 'Image updated successfully', data: updatedImage });
   } catch (error) {
-    console.error('Error saving image:', error);
-    res.status(500).json({ error: 'Server error saving image' });
+    console.error('Error updating image:', error);
+    res.status(500).json({ error: 'Server error updating image' });
   }
 });
+
 
 
 router.get('/images/:name', async (req, res) => {
