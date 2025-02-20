@@ -228,8 +228,6 @@ router.get("/profile", isAuthenticated, async (req, res) => {
   }
 });
 
-
-
 // 🔓 Logout - Securely Remove Tokens
 router.post("/logout", async (req, res) => {
   try {
