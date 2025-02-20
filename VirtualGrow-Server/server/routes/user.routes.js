@@ -75,38 +75,51 @@ router.post("/signup", async (req, res) => {
 
 
 // 🔑 Login - Authenticate & Issue Tokens
-// user.routes.js (example)
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    
-    // 1. Validate user
+
+    // 1. Validate user & password (pseudo-code)
     const user = await UserModel.findOne({ email });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Check password (pseudo-code)
-    const isMatch = await bcryptjs.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(403).json({ error: "Invalid credentials" });
 
     // 2. Generate tokens
     const tokenData = { _id: user._id, email: user.email };
-    const accessToken = jwt.sign(tokenData, process.env.TOKEN_SECRET, { expiresIn: "30m" });
-    const refreshToken = jwt.sign(tokenData, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+    const accessToken = jwt.sign(tokenData, process.env.TOKEN_SECRET, {
+      expiresIn: "30m",
+    });
+    const refreshToken = jwt.sign(tokenData, process.env.REFRESH_TOKEN_SECRET, {
+      expiresIn: "7d",
+    });
 
-    // 3. Save refresh token in DB (optional)
+    // 3. Save refresh token in DB (if you want to invalidate it later)
     user.refreshToken = refreshToken;
     await user.save();
 
-    // 4. Return tokens + user in JSON
-    res.status(200).json({
+    // 4. Set the cookies
+    // Access token cookie
+    res.cookie("token", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 30 * 60 * 1000, // 30 minutes
+    });
+
+    // Refresh token cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // 5. Optionally return user info in JSON
+    return res.status(200).json({
       message: "Login successful",
-      accessToken,
-      refreshToken,
-      user: {
-        email: user.email,
-        name: user.name,
-        // add more fields if needed
-      },
+      user: { email: user.email, name: user.name },
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -116,26 +129,42 @@ router.post("/login", async (req, res) => {
 
 
 
+
 // 🔄 Refresh Access Token Automatically (No User Input Required)
 router.post("/logout", async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies.refreshToken; // read from cookie
     if (!refreshToken) {
       return res.status(400).json({ error: "No refresh token provided" });
     }
 
-    // Find user by refreshToken, clear it
+    // Find user by refreshToken and clear it
     const user = await UserModel.findOne({ refreshToken });
     if (user) {
       user.refreshToken = null;
       await user.save();
     }
 
-    res.status(200).json({ message: "Logged out successfully" });
+    // Clear the refreshToken cookie
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+    });
+
+    // Also clear the accessToken cookie if you want
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+    });
+
+    return res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     res.status(500).json({ error: "Error logging out", message: error.message });
   }
 });
+
 
 
 router.delete('/delete', async (req, res) => {
@@ -190,28 +219,25 @@ router.get("/profile/:email", isAuthenticated, async (req, res) => {
 // 🔓 Logout - Securely Remove Tokens
 router.post("/logout", async (req, res) => {
   try {
-    const { refreshToken } = req.cookies;
-
+    const { refreshToken } = req.cookies; // read from cookies now
     if (!refreshToken) {
       return res.status(400).json({ error: "No refresh token provided" });
     }
 
-    // Find user by refresh token and remove it
+    // 1. Find user by refresh token, clear it
     const user = await UserModel.findOne({ refreshToken });
     if (user) {
       user.refreshToken = null;
       await user.save();
     }
 
-    // Clear the refreshToken cookie
-    res.clearCookie("refreshToken", {
+    // 2. Clear both cookies
+    res.clearCookie("token", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // or 'true' if always HTTPS
+      secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
     });
-
-    // Also clear the accessToken cookie if you're using it
-    res.clearCookie("accessToken", {
+    res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
@@ -219,11 +245,10 @@ router.post("/logout", async (req, res) => {
 
     return res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ error: "Error logging out", message: error.message });
+    res.status(500).json({ error: "Error logging out", message: error.message });
   }
 });
+
 
 
 
