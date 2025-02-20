@@ -223,6 +223,30 @@ router.get("/garden/:name", async (req, res) => {
   }
 });
 
+
+// POST /api/ai/saveImage
+router.post('/saveImage', async (req, res) => {
+  const { gardenName, imageUrl } = req.body;
+
+  // Validate required fields
+  if (!gardenName || !imageUrl) {
+    return res.status(400).json({ error: 'Missing required fields: gardenName or imageUrl' });
+  }
+
+  try {
+    // Example: You might have an Image model or a Garden model
+    // If you have a separate Image model:
+    const newImage = new Image({ gardenName, imageUrl });
+    await newImage.save();
+
+    res.status(201).json({ message: 'Image saved successfully', data: newImage });
+  } catch (error) {
+    console.error('Error saving image:', error);
+    res.status(500).json({ error: 'Server error saving image' });
+  }
+});
+
+
 router.get('/images/:gardenName', async (req, res) => {
   const { gardenName } = req.params;
   try {
