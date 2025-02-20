@@ -75,106 +75,68 @@ router.post("/signup", async (req, res) => {
 
 
 // 🔑 Login - Authenticate & Issue Tokens
+// user.routes.js (example)
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+    
+    // 1. Validate user
+    const user = await UserModel.findOne({ email });
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    const foundUser = await UserModel.findOne({ email });
-    if (!foundUser) return res.status(404).json({ error: "User not found" });
+    // Check password (pseudo-code)
+    const isMatch = await bcryptjs.compare(password, user.password);
+    if (!isMatch) return res.status(403).json({ error: "Invalid credentials" });
 
-    if (!bcryptjs.compareSync(password, foundUser.password)) {
-      return res.status(403).json({ error: "Invalid credentials" });
-    }
+    // 2. Generate tokens
+    const tokenData = { _id: user._id, email: user.email };
+    const accessToken = jwt.sign(tokenData, process.env.TOKEN_SECRET, { expiresIn: "30m" });
+    const refreshToken = jwt.sign(tokenData, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
 
-    const tokenData = {
-      _id: foundUser._id,
-      email: foundUser.email,
-      name: foundUser.name
-    };
+    // 3. Save refresh token in DB (optional)
+    user.refreshToken = refreshToken;
+    await user.save();
 
-    // Generate tokens
-    const accessToken = jwt.sign(tokenData, process.env.TOKEN_SECRET, {
-      expiresIn: "30m"
-    });
-    const refreshToken = jwt.sign(tokenData, process.env.REFRESH_TOKEN_SECRET, {
-      expiresIn: "7d"
-    });
-
-    // ✅ Store refresh token in MongoDB
-    foundUser.refreshToken = refreshToken;
-    await foundUser.save();
-
-    // ✅ Store refresh token in a secure HTTP-only cookie
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // true if HTTPS
-      sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
-
-    // ✅ Send access token & refresh token in JSON response (unchanged)
+    // 4. Return tokens + user in JSON
     res.status(200).json({
       message: "Login successful",
       accessToken,
-      refreshToken
+      refreshToken,
+      user: {
+        email: user.email,
+        name: user.name,
+        // add more fields if needed
+      },
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Error logging in user", message: error.message });
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Server error during login" });
   }
 });
 
 
 
 // 🔄 Refresh Access Token Automatically (No User Input Required)
-router.post("/refresh-token", async (req, res) => {
+router.post("/logout", async (req, res) => {
   try {
-    console.log("Cookies received:", req.cookies); // Debugging
-
-    const refreshToken = req.cookies.refreshToken; // Get refresh token from secure cookie
+    const { refreshToken } = req.body;
     if (!refreshToken) {
-      return res.status(403).json({ error: "No refresh token provided" });
+      return res.status(400).json({ error: "No refresh token provided" });
     }
 
-    // Verify refresh token
-    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, decoded) => {
-      if (err) {
-        console.log("JWT Verification Error:", err.message);
-        return res.status(403).json({ error: "Invalid or expired refresh token" });
-      }
+    // Find user by refreshToken, clear it
+    const user = await UserModel.findOne({ refreshToken });
+    if (user) {
+      user.refreshToken = null;
+      await user.save();
+    }
 
-      console.log("Decoded Token:", decoded);
-
-      // Find the user in MongoDB
-      const user = await UserModel.findOne({ _id: decoded._id });
-
-      if (!user || !user.refreshToken) {
-        console.log("User not found or no refresh token stored in DB.");
-        return res.status(403).json({ error: "Invalid refresh token" });
-      }
-
-      console.log("Stored Refresh Token in DB:", user.refreshToken);
-      console.log("Received Refresh Token from Cookie:", refreshToken);
-
-      if (user.refreshToken !== refreshToken) {
-        return res.status(403).json({ error: "Refresh token mismatch" });
-      }
-
-      // Generate a new access token
-      const newAccessToken = jwt.sign(
-        { _id: user._id, email: user.email, name: user.name },
-        process.env.TOKEN_SECRET,
-        { expiresIn: "30m" }
-      );
-
-      res.status(200).json({ accessToken: newAccessToken });
-    });
+    res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
-    console.error("Unexpected Error:", error.message);
-    res.status(500).json({ error: "Error refreshing token", message: error.message });
+    res.status(500).json({ error: "Error logging out", message: error.message });
   }
 });
+
 
 router.delete('/delete', async (req, res) => {
   try {
