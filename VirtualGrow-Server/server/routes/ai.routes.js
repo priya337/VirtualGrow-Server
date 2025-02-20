@@ -7,6 +7,7 @@ dotenv.config();
 
 // ✅ Ensure correct import for the Garden model (using relative path)
 import Garden from "../models/Garden.model.js";  
+import Image from "../models/Image.model.js"; 
 
 const router = express.Router();
 
@@ -219,6 +220,26 @@ router.get("/garden/:name", async (req, res) => {
   } catch (error) {
     console.error("❌ Fetching Garden Error:", error.message);
     return res.status(500).json({ error: "Failed to retrieve garden", details: error.message });
+  }
+});
+
+router.post('/saveImage', async (req, res) => {
+  const { gardenName, imageUrl } = req.body;
+
+  // Validate required fields
+  if (!gardenName || !imageUrl) {
+    return res.status(400).json({ error: 'Missing required fields: gardenName or imageUrl' });
+  }
+
+  try {
+    // Create and save the new image document
+    const newImage = new Image({ gardenName, imageUrl });
+    await newImage.save();
+
+    res.status(201).json({ message: 'Image saved successfully', data: newImage });
+  } catch (error) {
+    console.error('Error saving image:', error);
+    res.status(500).json({ error: 'Server error saving image' });
   }
 });
 
