@@ -1,5 +1,5 @@
 import express from "express";
-import bcryptjs from "bcryptjs";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import UserModel from "../models/User.model.js";
 import dotenv from "dotenv";
@@ -7,13 +7,8 @@ import isAuthenticated from '../middleware/auth.middleware.js';
 import { deleteUserProfile } from '../controllers/userController.js';
 import cookieParser from "cookie-parser";
 
-
 dotenv.config();
 const router = express.Router();
-
-
-
-
 
 // 🔐 Signup - Register User (With Image Validation)
 router.post("/signup", async (req, res) => {
