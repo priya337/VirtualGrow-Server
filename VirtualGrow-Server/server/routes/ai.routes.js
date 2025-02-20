@@ -247,10 +247,10 @@ router.post('/saveImage', async (req, res) => {
 });
 
 
-router.get('/images/:gardenName', async (req, res) => {
-  const { gardenName } = req.params;
+router.get('/images/:name', async (req, res) => {
+  const { name } = req.params;
   try {
-    const images = await Image.find({ gardenName });
+    const images = await Image.find({ gardenName: name });
     res.status(200).json(images);
   } catch (error) {
     console.error('Error fetching images:', error);
