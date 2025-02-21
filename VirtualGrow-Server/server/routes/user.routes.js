@@ -72,7 +72,7 @@ router.post("/signup", async (req, res) => {
 
 
 // 🔑 Login - Authenticate & Issue Tokens
-router.post("/login", async (req, res) => {
+router.post("/login",isAuthenticated, async (req, res) => {
   try {
     console.log("Login route hit. Request body:", req.body);
 
