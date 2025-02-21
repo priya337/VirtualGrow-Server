@@ -3,47 +3,35 @@ const logger = require("morgan");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
-const FRONTEND_URL = "https://virtual-grow.netlify.app"; // ✅ Production frontend
-const LOCAL_FRONTEND = "http://localhost:5173"; // ✅ Local frontend for development
+const FRONTEND_URL = "https://virtual-grow.netlify.app"; // Production frontend
+const LOCAL_FRONTEND = "http://localhost:5173"; // Local frontend for development
 
-// Middleware configuration
 module.exports = (app) => {
-  // ✅ Trust proxy for cloud deployments (Render, Heroku, etc.)
+  // For cloud deployments (e.g., Render), trust the proxy
   app.set("trust proxy", 1);
 
-  // ✅ Allow CORS for all origins (*)
+  // 1. Set up CORS with credentials for a single (or multiple) known origin(s)
   app.use(
     cors({
-      origin: "https://virtual-grow.netlify.app", // ✅ Allow ALL origins (use with caution!)
-      credentials: true, // ✅ Allow cookies & authentication headers
-      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // ✅ Allowed HTTP methods
-      allowedHeaders: ["Content-Type", "Authorization"], // ✅ Allowed headers
+      origin: [FRONTEND_URL, LOCAL_FRONTEND], // or [FRONTEND_URL, LOCAL_FRONTEND] if you want to allow both
+      credentials: true,    // Allow cookies to be sent
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
     })
   );
 
-  // ✅ Ensure all responses have CORS headers (for preflight requests)
-  app.use((req, res, next) => {
-    res.setHeader("Access-Control-Allow-Origin", "*"); // ✅ Allow all origins
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  // 2. (Optional) If you want to explicitly handle preflight requests:
+  // app.options("*", cors());
 
-    if (req.method === "OPTIONS") {
-      return res.sendStatus(200); // ✅ Handles preflight requests properly
-    }
-
-    next();
-  });
-
-  // ✅ Log HTTP requests in development mode
+  // 3. Log HTTP requests (helpful in development)
   app.use(logger("dev"));
 
-  // ✅ Enable JSON parsing for incoming requests
+  // 4. Enable JSON parsing for incoming requests
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
 
-  // ✅ Enable cookie parsing (needed for refresh token storage)
+  // 5. Enable cookie parsing (needed for refresh token storage, etc.)
   app.use(cookieParser());
 
-  console.log("🚀 CORS is temporarily open for all origins!");
+  console.log("🚀 CORS configured for:", FRONTEND_URL);
 };
