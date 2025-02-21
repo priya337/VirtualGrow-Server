@@ -211,7 +211,7 @@ router.get("/profile",  async (req, res) => {
     console.log("Decoded user in /profile:", req.user);
 
     // If your JWT has _id, do this:
-    const userId = req.user?._id; 
+    const userId = req.user?.id; 
     // If it uses id instead, do: const userId = req.user?.id;
 
     if (!userId) {
