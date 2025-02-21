@@ -18,74 +18,49 @@ router.post("/signup", async (req, res) => {
       password,
       name,
       location,
-      photo,
+      photo, // Now the front end always sends this
       ExteriorPlants,
       InteriorPlants,
     } = req.body;
 
-    // 1. Validate required fields
+    // Check for required fields
+    // If you want photo to be mandatory, keep it here
+    // If you want it optional, remove || !photo
     if (!email || !password || !name || !photo) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // 2. Check if user already exists
+    // Check if user already exists
     const existingUser = await UserModel.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: "Email is already registered" });
     }
 
-    // 3. Hash the password
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // 4. Create new user
+    // ✅ Validate photo file extension (optional)
+    // If your front end always sends a Pollinations URL, you may not need this check
+    // const allowedExtensions = [".jpg", ".jpeg", ".png", ".gif"];
+    // const fileExtension = photo.split(".").pop().toLowerCase();
+    // if (!allowedExtensions.includes(.${fileExtension})) {
+    //   return res
+    //     .status(400)
+    //     .json({ error: "Invalid photo format. Allowed: .jpg, .jpeg, .png, .gif" });
+    // }
+
+    // Create new user
     const newUser = await UserModel.create({
       email,
       password: hashedPassword,
       name,
       location,
-      photo,
+      photo, // Just store whatever URL was sent from the front end
       ExteriorPlants: ExteriorPlants || false,
       InteriorPlants: InteriorPlants || false,
     });
 
-    // 5. Generate tokens for auto-login
-    const tokenData = { _id: newUser._id, email: newUser.email };
-    const accessToken = jwt.sign(tokenData, JWT_SECRET, { expiresIn: "30m" });
-    const refreshToken = jwt.sign(tokenData, REFRESH_SECRET, { expiresIn: "7d" });
-
-    // Store refresh token in DB if you want to invalidate later
-    newUser.refreshToken = refreshToken;
-    await newUser.save();
-
-    // 6. Set HTTP-only cookies for cross-site usage
-    res.cookie("token", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",  // for cross-site
-      maxAge: 30 * 60 * 1000, // 30 minutes
-    });
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-
-    // 7. Return user data
-    return res.status(201).json({
-      message: "User created successfully",
-      user: {
-        _id: newUser._id,
-        email: newUser.email,
-        name: newUser.name,
-        location: newUser.location,
-        photo: newUser.photo,
-        ExteriorPlants: newUser.ExteriorPlants,
-        InteriorPlants: newUser.InteriorPlants,
-      },
-      accessToken,
-      refreshToken,
-    });
+    res.status(201).json({ message: "User created successfully" });
   } catch (error) {
     console.error("Error creating user:", error);
     res.status(500).json({ error: "Error creating user", message: error.message });
@@ -119,42 +94,39 @@ router.post("/login", async (req, res) => {
 
     // 3. Generate tokens
     const tokenData = { _id: user._id, email: user.email };
-    const accessToken = jwt.sign(tokenData, JWT_SECRET, { expiresIn: "30m" });
-    const refreshToken = jwt.sign(tokenData, REFRESH_SECRET, { expiresIn: "7d" });
+    const accessToken = jwt.sign(tokenData, process.env.TOKEN_SECRET, {
+      expiresIn: "30m",
+    });
+    const refreshToken = jwt.sign(tokenData, process.env.REFRESH_TOKEN_SECRET, {
+      expiresIn: "7d",
+    });
 
-    // 4. Save refresh token in DB
+    // 4. Save refresh token in DB (if you want to invalidate later)
     user.refreshToken = refreshToken;
     await user.save();
 
-    // 5. Set HTTP-only cookies (cross-site)
+    // 5. Set HTTP-only cookies for both tokens
     res.cookie("token", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "none", 
-      maxAge: 30 * 60 * 1000,
+      sameSite: "Strict",
+      maxAge: 30 * 60 * 1000, // 30 minutes
     });
+
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    // 6. Return user info
+    // 6. Optionally return user info
     console.log("Login successful. Sending response...");
     return res.status(200).json({
       message: "Login successful",
-      user: { 
-        _id: user._id,
-        email: user.email,
-        name: user.name,
-        location: user.location,
-        photo: user.photo,
-        ExteriorPlants: user.ExteriorPlants,
-        InteriorPlants: user.InteriorPlants,
-      },
-      accessToken,
-      refreshToken,
+      user: { email: user.email, name: user.name },
+      accessToken,       // include the access token
+      refreshToken
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -163,33 +135,33 @@ router.post("/login", async (req, res) => {
 });
 
 
-
 // 🔄 Refresh Access Token Automatically (No User Input Required)
 router.post("/logout", async (req, res) => {
   try {
-    // 1. Get refreshToken from cookies
-    const { refreshToken } = req.cookies;
+    const refreshToken = req.cookies.refreshToken; // read from cookie
     if (!refreshToken) {
       return res.status(400).json({ error: "No refresh token provided" });
     }
 
-    // 2. Find user by refresh token and clear it
+    // Find user by refreshToken and clear it
     const user = await UserModel.findOne({ refreshToken });
     if (user) {
       user.refreshToken = null;
       await user.save();
     }
 
-    // 3. Clear both cookies
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
-    });
+    // Clear the refreshToken cookie
     res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
+      sameSite: "Strict",
+    });
+
+    // Also clear the accessToken cookie if you want
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
     });
 
     return res.status(200).json({ message: "Logged out successfully" });
@@ -197,7 +169,6 @@ router.post("/logout", async (req, res) => {
     res.status(500).json({ error: "Error logging out", message: error.message });
   }
 });
-
  
 router.delete('/delete', async (req, res) => {
   try {
@@ -237,8 +208,9 @@ router.post("/reset-password", async (req, res) => {
 // In your users router file
 router.get("/profile", isAuthenticated, async (req, res) => {
   try {
-    // The 'isAuthenticated' middleware puts the decoded token data on req.user
-    const userId = req.user?._id;
+    // If using JWT or session-based authentication, you can retrieve
+    // the user ID from req.user (or req.session) as set by your middleware.
+    const userId = req.user?._id; // or however your isAuthenticated middleware sets req.user
     if (!userId) {
       return res.status(401).json({ error: "Not authorized" });
     }
@@ -248,7 +220,7 @@ router.get("/profile", isAuthenticated, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Return the full user document (or select fields you need)
+    // Return the user object
     res.status(200).json(user);
   } catch (err) {
     console.error("Server error fetching profile:", err);
@@ -289,5 +261,4 @@ router.post("/logout", async (req, res) => {
   }
 });
 
-
-export default router;
+export default router; 
