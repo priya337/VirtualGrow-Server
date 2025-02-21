@@ -10,11 +10,11 @@ module.exports = (app) => {
   // For cloud deployments (e.g., Render), trust the proxy
   app.set("trust proxy", 1);
 
-  // 1. Set up CORS with credentials for a single (or multiple) known origin(s)
+  // 1. Set up CORS with credentials for both known origins (production + local dev)
   app.use(
     cors({
-      origin: [FRONTEND_URL, LOCAL_FRONTEND], // or [FRONTEND_URL, LOCAL_FRONTEND] if you want to allow both
-      credentials: true,    // Allow cookies to be sent
+      origin: [FRONTEND_URL, LOCAL_FRONTEND],
+      credentials: true, // Allow cookies to be sent
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
     })
@@ -33,5 +33,5 @@ module.exports = (app) => {
   // 5. Enable cookie parsing (needed for refresh token storage, etc.)
   app.use(cookieParser());
 
-  console.log("🚀 CORS configured for:", FRONTEND_URL);
+  console.log("🚀 CORS configured for:", [FRONTEND_URL, LOCAL_FRONTEND]);
 };
