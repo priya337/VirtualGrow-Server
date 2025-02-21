@@ -205,7 +205,7 @@ router.post("/reset-password", async (req, res) => {
 
 
 // In your users router file
-router.get("/profile", isAuthenticated, async (req, res) => {
+router.get("/profile",  async (req, res) => {
   try {
     // Debug: see what's inside req.user
     console.log("Decoded user in /profile:", req.user);
