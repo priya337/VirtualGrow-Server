@@ -26,15 +26,15 @@ const UserSchema = new mongoose.Schema(
     }, 
     photo: { 
       type: String,
-      required: [false, "Photo is required."]
+      required: [true, "Photo is required."]
     },
     ExteriorPlants: { 
       type: Boolean,
-      default: false
+      default: true
     },
     InteriorPlants: { 
       type: Boolean,
-      default: false
+      default: true
     },
     resetPasswordToken: { type: String }, // ✅ Store reset token
     resetPasswordExpires: { type: Date }, // ✅ Expiry time for reset token
