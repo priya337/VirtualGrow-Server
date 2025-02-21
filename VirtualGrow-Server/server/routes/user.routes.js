@@ -204,13 +204,16 @@ router.post("/reset-password", async (req, res) => {
 });
 
 
-// In your user routes file
 // In your users router file
 router.get("/profile", isAuthenticated, async (req, res) => {
   try {
-    // If using JWT or session-based authentication, you can retrieve
-    // the user ID from req.user (or req.session) as set by your middleware.
-    const userId = req.user?._id; // or however your isAuthenticated middleware sets req.user
+    // Debug: see what's inside req.user
+    console.log("Decoded user in /profile:", req.user);
+
+    // If your JWT has _id, do this:
+    const userId = req.user?._id; 
+    // If it uses id instead, do: const userId = req.user?.id;
+
     if (!userId) {
       return res.status(401).json({ error: "Not authorized" });
     }
@@ -220,13 +223,14 @@ router.get("/profile", isAuthenticated, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Return the user object
+    // Return the user document
     res.status(200).json(user);
   } catch (err) {
     console.error("Server error fetching profile:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
+
 
 // 🔓 Logout - Securely Remove Tokens
 router.post("/logout", async (req, res) => {
