@@ -3,12 +3,14 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import UserModel from "../models/User.model.js";
 import dotenv from "dotenv";
+
 import isAuthenticated from '../middleware/auth.middleware.js';
 import { deleteUserProfile } from '../controllers/userController.js';
 import cookieParser from "cookie-parser";
 
 dotenv.config();
 const router = express.Router();
+
 
 // 🔐 Signup - Register User (With Image Validation)
 router.post("/signup", async (req, res) => {
@@ -205,13 +207,13 @@ router.post("/reset-password", async (req, res) => {
 
 
 // In your users router file
-router.get("/profile",  async (req, res) => {
+router.get("/profile",  isAuthenticated, async (req, res) => {
   try {
     // Debug: see what's inside req.user
     console.log("Decoded user in /profile:", req.user);
 
     // If your JWT has _id, do this:
-    const userId = req.user?.id; 
+    const userId = req.user?._id; 
     // If it uses id instead, do: const userId = req.user?.id;
 
     if (!userId) {
